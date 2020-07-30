@@ -1,10 +1,13 @@
 var express = require('express');
 var fs = require('fs');
 var exphbs = require('express-handlebars');
+var bodyParser = require('body-parser');
 var app = express();
 app.engine('handlebars', exphbs());
 app.set('view engine', 'handlebars');
 app.use(express.static('static'));
+app.use('/x', express.static('packages'));
+app.use(bodyParser.text());
 
 app.get('/', (req, res) => {
 	res.render('home');
@@ -27,9 +30,22 @@ app.get('/packages', (req, res) => {
 });
 
 app.get('/packages/:name', (req, res) => {
-	res.render('packages/info', {
-		name: req.params.name
+	fs.readFile('packages/' + req.params.name + '/info.txt', 'utf8', function(err, data) {
+		res.render('packages/info', {
+			name: req.params.name,
+			desc: data || "Package does not exist."
+		});
 	});
+});
+
+app.post('/packages/:name', (req, res) => {
+	if (!fs.existsSync('packages/' + req.params.name + '/info.txt')) {
+		fs.writeFile('packages/' + req.params.name + '/main.samuel', req.body,'utf8', function(err) {
+			res.send(req.body);
+		});	
+	} else {
+		res.status(403).send("Package already exists.")
+	}
 });
 
 app.get('/docs', (req, res) => {
